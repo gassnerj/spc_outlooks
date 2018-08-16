@@ -1,9 +1,21 @@
 import math
 import numpy as np
+import enum
 
 
 class UnitConversionException(Exception):
     pass
+
+
+class TemperatureUnits(enum.Enum):
+    celsius = 1
+    fahrenheit = 2
+    kelvin = 3
+
+
+class PressureUnits(enum.Enum):
+    millibars = 1
+    hectoPascals = 2
 
 
 class Atmosphere:
@@ -13,7 +25,7 @@ class Atmosphere:
 
     @staticmethod
     def convert_fahrenheit_to_celsius(temperature):
-        celsius = round((temperature - 32) * .5556, 2)
+        celsius = (temperature - 32) * .5556
         return celsius
 
     @staticmethod
@@ -35,6 +47,10 @@ class Atmosphere:
         celsius = round(temperature - 273.15, 2)
         return celsius
 
+    def convert_kelvin_to_fahrenheit(self, temperature):
+        c = self.convert_kelvin_to_celsius(temperature)
+        return self.convert_celsius_to_fahrenheit(c)
+
     @staticmethod
     def heat_index(temperature, rh):
         """Calculate the heat index with degrees F and Relative Humidity"""
@@ -50,8 +66,8 @@ class Atmosphere:
         return math.floor(wind_chill)
 
     def relative_humidity(self, temperature, dew_point_temperature):
-        e = self.actual_vapor_pressure(dew_point_temperature)
-        es = self.saturation_vapor_pressure(temperature)
+        e = self.vapor_pressure(dew_point_temperature)
+        es = self.vapor_pressure(temperature)
         relative_humidity = e/es * 100
         return relative_humidity
 
@@ -59,30 +75,26 @@ class Atmosphere:
         es = self.saturation_vapor_pressure(temperature)
         dew_point_temperature = round((237.3 * math.log((es * relative_humidity)/611)) /
                                       (7.5 * math.log(10) - math.log((es * relative_humidity) / 611)), 2)
-        dew_point_temperature = self.convert_C_to_F(dew_point_temperature)
+        dew_point_temperature = self.convert_celsius_to_fahrenheit(dew_point_temperature)
         return dew_point_temperature
 
-    @staticmethod
-    def actual_mixing_ratio(temperature, dew_point_temperature, pressure):
-        w = 621.97 * e/pressure - e
-        return w
+    def mixing_ratio(self, temperature, pressure):
+        actual_vapor_pressure = self.vapor_pressure(temperature)
+        return 621.97 * (actual_vapor_pressure / (pressure - actual_vapor_pressure))
 
-    def actual_vapor_pressure(self, dew_point_temperature):
-        """Returns the actual vapor pressure given the temperature in degrees F."""
-        dew_point_temperature = self.convert_fahrenheit_to_celsius(dew_point_temperature)
-        n = (7.5 * dew_point_temperature) / (237.3 + dew_point_temperature)
-        e = 6.11 * 10**n
-        return e
-
-    def saturation_vapor_pressure(self, temperature):
-        """Returns the saturation vapor pressure given the temperature in degrees F."""
-        temperature = self.convert_fahrenheit_to_celsius(temperature)
+    """Clausius-Clapeyron equation given the temperature in degrees Fahrenheit."""
+    def vapor_pressure(self, temperature, t_units=TemperatureUnits.celsius, p_units=PressureUnits.millibars):
+        """Returns the saturation vapor pressure."""
+        if t_units is not TemperatureUnits.celsius:
+            if t_units is TemperatureUnits.fahrenheit:
+                temperature = self.convert_fahrenheit_to_celsius(temperature)
+            elif t_units is TemperatureUnits.kelvin:
+                temperature = self.convert_kelvin_to_celsius(temperature)
         n = (7.5 * temperature) / (237.3 + temperature)
-        es = 6.11 * 10**n
+        es = 6.11 * (10**n)
+        if p_units is PressureUnits.hectoPascals:
+            es = es / 10
         return es
-
-    def sat_mixing_ratio(self, temperature, dew_point_temperature, pressure):
-        pass
 
     @staticmethod
     def virtual_temp(temperature, dew_point_temperature, pressure):
@@ -102,10 +114,37 @@ class Atmosphere:
                 / self.convert_celsius_to_kelvin(data[0]['Tc'])) * (data[1]['hgt'] - data[0]['hgt'])
         return CAPE
 
-    def clausius_clapeyron_equation(self):
-        
+    @staticmethod
+    def convert_millibars_to_pascals(pressure):
+        return pressure * 100
+
+    def potential_temperature(self, pressure, temperature):
+        t = self.convert_celsius_to_kelvin(temperature)
+        p = 1000 / pressure
+        return t * p ** .286
+
+    """Equivalent potential temperature, Theta-E. Greater Theta-E equals greater potential
+       for positive buoyancy."""
+    def equivalent_potential_temperature(self, pressure, temperature, round_result=False):
+        t = self.convert_celsius_to_kelvin(temperature)
+        w = 11.56  # saturation mixing ratio in g/kg.
+        theta_e = t * (1000 / pressure) ** .286 + 3 * w
+        if round_result is True:
+            theta_e = round(theta_e, 2)
+        return theta_e
+
 
 a = Atmosphere()
+
+print(a.vapor_pressure(50.00))
+
+print(round(a.relative_humidity(70, 50), 0))
+
+print(round(a.potential_temperature(500, 0), 0))
+
+print(a.equivalent_potential_temperature(850, 38, True))
+
+print(a.mixing_ratio(16, 850))
 
 # print(A.wind_chill(30, 50))
 
