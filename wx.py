@@ -30,21 +30,21 @@ class Atmosphere:
 
     @staticmethod
     def convert_celsius_to_fahrenheit(temperature):
-        fahrenheit = round(temperature * 1.8 + 32, 2)
+        fahrenheit = temperature * 1.8 + 32
         return fahrenheit
 
     @staticmethod
     def convert_celsius_to_kelvin(temperature):
-        kelvin = round(temperature + 273.15, 2)
+        kelvin = temperature + 273.15
         return kelvin
 
     def convert_fahrenheit_to_kelvin(self, temperature):
-        kelvin = round(self.convert_fahrenheit_to_celsius(temperature) + 273.15, 2)
+        kelvin = self.convert_fahrenheit_to_celsius(temperature) + 273.15
         return kelvin
 
     @staticmethod
     def convert_kelvin_to_celsius(temperature):
-        celsius = round(temperature - 273.15, 2)
+        celsius = temperature - 273.15
         return celsius
 
     def convert_kelvin_to_fahrenheit(self, temperature):
