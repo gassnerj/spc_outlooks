@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import requests
 import re
 import enum
+import argparse
 
 
 class Outlooks(enum.Enum):
@@ -49,12 +50,24 @@ class ConvectiveOutlook(object):
             return 'Not available'
 
     def __init__(self, outlook):
-        self.__forecast_period = outlook
+        self.__forecast_period = self.parse_text_argument(outlook)
         self.forecast_text = self.get_forecast_text()
         self.categorical_graphic = self.base_url + 'day1otlk_2000_prt.gif'
         self.probabilistic_tornado_graphic = self.base_url + 'day1probotlk_2000_torn_prt.gif'
         self.probabilistic_damaging_wind_graphic = None
         self.probabilistic_large_hail_graphic = None
+
+    def parse_text_argument(self, arg='DAY1'):
+        if arg == 'DAY1':
+            return Outlooks.DAY1
+        elif arg == 'DAY2':
+            return Outlooks.DAY2
+        elif arg == 'DAY3':
+            return Outlooks.DAY3
+        elif arg == 'DAY4':
+            return Outlooks.DAY4
+        else:
+            return None
 
     def get_forecast_text(self):
         r = requests.get(self.url)
@@ -64,6 +77,18 @@ class ConvectiveOutlook(object):
             return text
 
 
-o = ConvectiveOutlook(Outlooks.DAY1)
+parser = argparse.ArgumentParser(description="Get SPC Outlook.")
+parser.add_argument('-o', 
+                    metavar='--outlook',
+                    type=str,
+                    help='The outlook, DAY1, DAY2, DAY3, or DAY4',
+                    required=True)
+
+args = parser.parse_args()
+
+outlook = args.o
+
+
+o = ConvectiveOutlook(outlook)
 print(o.forecast_text)
 print('The max category is: ' + o.max_category)
