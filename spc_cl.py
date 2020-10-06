@@ -1,5 +1,5 @@
 import argparse
-import ConvectiveOutlook
+from spc import ConvectiveOutlook
 
 
 arg_parser = argparse.ArgumentParser(description="Get SPC Outlook.")
