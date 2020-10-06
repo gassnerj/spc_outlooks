@@ -24,3 +24,6 @@ o = ConvectiveOutlook(outlook, date)
 print(o.forecast_text)
 print('The max category is: ' + o.max_category)
 o.show_forecast_graphic()
+
+print('this is my first new line of code in this file')
+print('')
