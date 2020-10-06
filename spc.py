@@ -8,6 +8,7 @@ import shutil
 from dateutil import parser
 import time
 
+
 class Outlooks(enum.Enum):
     DAY1 = 0
     DAY2 = 1
