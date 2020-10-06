@@ -3,7 +3,10 @@ import requests
 import re
 import enum
 import argparse
-
+from PIL import Image
+import shutil
+from dateutil import parser
+import time
 
 class Outlooks(enum.Enum):
     DAY1 = 0
@@ -19,6 +22,10 @@ class ConvectiveOutlook(object):
             return r'https://www.spc.noaa.gov/products/exper/'
         else:
             return r'https://www.spc.noaa.gov/products/outlook/'
+
+    @property
+    def base_image_url(self):
+        return r'https://www.spc.noaa.gov/products/outlook/archive'
 
     @property
     def url(self):
@@ -49,15 +56,16 @@ class ConvectiveOutlook(object):
         else:
             return 'Not available'
 
-    def __init__(self, outlook):
-        self.__forecast_period = self.parse_text_argument(outlook)
+    def __init__(self, selected_outlook):
+        self.__forecast_period = self.parse_text_argument(selected_outlook)
         self.forecast_text = self.get_forecast_text()
         self.categorical_graphic = self.base_url + 'day1otlk_2000_prt.gif'
         self.probabilistic_tornado_graphic = self.base_url + 'day1probotlk_2000_torn_prt.gif'
         self.probabilistic_damaging_wind_graphic = None
         self.probabilistic_large_hail_graphic = None
 
-    def parse_text_argument(self, arg='DAY1'):
+    @staticmethod
+    def parse_text_argument(arg='DAY1'):
         if arg == 'DAY1':
             return Outlooks.DAY1
         elif arg == 'DAY2':
@@ -76,19 +84,55 @@ class ConvectiveOutlook(object):
         for text in soup.find('pre'):
             return text
 
+    def show_forecast_graphic(self):
+        graphic_url = self.construct_graphic_url('05/31/2013', '0100', 'torn')
+        r = requests.get(graphic_url, stream=True)
 
-parser = argparse.ArgumentParser(description="Get SPC Outlook.")
-parser.add_argument('-o', 
-                    metavar='--outlook',
-                    type=str,
-                    help='The outlook, DAY1, DAY2, DAY3, or DAY4',
-                    required=True)
+        if r.status_code == 200:
+            r.raw.decode_content = True
 
-args = parser.parse_args()
+            with open('forecast_graphic.gif', 'wb') as f:
+                shutil.copyfileobj(r.raw, f)
+
+            image_file_location = 'forecast_graphic.gif'
+            image = Image.open(image_file_location)
+            image.show()
+
+    def construct_graphic_url(self, date, hour, g_type):
+        date = parser.parse(date)
+        year = date.year
+        parsed_date = date.strftime('%Y%m%d')
+
+        if g_type == 'cat':
+            return "{base}/{year}/day1otlk_{date}_{hour}_prt.gif".format(
+                base=self.base_image_url,
+                year=year,
+                date=parsed_date,
+                hour=hour,
+                g_type=g_type
+            )
+        else:
+            return "{base}/{year}/day1probotlk_{date}_{hour}_{g_type}_prt.gif".format(
+                base=self.base_image_url,
+                year=year,
+                date=parsed_date,
+                hour=hour,
+                g_type=g_type
+            )
+
+
+arg_parser = argparse.ArgumentParser(description="Get SPC Outlook.")
+arg_parser.add_argument('-o',
+                        metavar='--outlook',
+                        type=str,
+                        help='The outlook, DAY1, DAY2, DAY3, or DAY4',
+                        required=True)
+
+args = arg_parser.parse_args()
 
 outlook = args.o
-
 
 o = ConvectiveOutlook(outlook)
 print(o.forecast_text)
 print('The max category is: ' + o.max_category)
+o.show_forecast_graphic()
