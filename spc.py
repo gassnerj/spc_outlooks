@@ -6,7 +6,6 @@ import argparse
 from PIL import Image
 import shutil
 from dateutil import parser
-import time
 
 
 class Outlooks(enum.Enum):
@@ -57,7 +56,12 @@ class ConvectiveOutlook(object):
         else:
             return 'Not available'
 
-    def __init__(self, selected_outlook):
+    @property
+    def forecast_date(self):
+        return self.__forecast_date
+
+    def __init__(self, selected_outlook, f_date):
+        self.__forecast_date = f_date
         self.__forecast_period = self.parse_text_argument(selected_outlook)
         self.forecast_text = self.get_forecast_text()
         self.categorical_graphic = self.base_url + 'day1otlk_2000_prt.gif'
@@ -86,7 +90,7 @@ class ConvectiveOutlook(object):
             return text
 
     def show_forecast_graphic(self):
-        graphic_url = self.construct_graphic_url('05/31/2013', '0100', 'torn')
+        graphic_url = self.construct_graphic_url('0100', 'torn')
         r = requests.get(graphic_url, stream=True)
 
         if r.status_code == 200:
@@ -99,10 +103,10 @@ class ConvectiveOutlook(object):
             image = Image.open(image_file_location)
             image.show()
 
-    def construct_graphic_url(self, date, hour, g_type):
-        date = parser.parse(date)
-        year = date.year
-        parsed_date = date.strftime('%Y%m%d')
+    def construct_graphic_url(self, hour, g_type):
+        f_date = parser.parse(self.forecast_date)
+        year = f_date.year
+        parsed_date = f_date.strftime('%Y%m%d')
 
         if g_type == 'cat':
             return "{base}/{year}/day1otlk_{date}_{hour}_prt.gif".format(
@@ -129,11 +133,18 @@ arg_parser.add_argument('-o',
                         help='The outlook, DAY1, DAY2, DAY3, or DAY4',
                         required=True)
 
+arg_parser.add_argument('-d',
+                        metavar='--date',
+                        type=str,
+                        help='The date of the outlook. mm-dd-yyy 05-31-2013',
+                        required=True)
+
 args = arg_parser.parse_args()
 
 outlook = args.o
+date = args.d
 
-o = ConvectiveOutlook(outlook)
+o = ConvectiveOutlook(outlook, date)
 print(o.forecast_text)
 print('The max category is: ' + o.max_category)
 o.show_forecast_graphic()
