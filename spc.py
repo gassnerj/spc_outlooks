@@ -1,9 +1,9 @@
-from bs4 import BeautifulSoup
-import requests
-import re
 import enum
-from PIL import Image
+import re
 import shutil
+import requests
+from PIL import Image
+from bs4 import BeautifulSoup
 from dateutil import parser
 
 
@@ -20,7 +20,7 @@ class ConvectiveOutlook(object):
         if self.forecast_period is Outlooks.DAY4:
             return r'https://www.spc.noaa.gov/products/exper/'
         else:
-            return r'https://www.spc.noaa.gov/products/outlook/'
+            return r'https://www.spc.noaa.gov/products/outlook/archive/'
 
     @property
     def base_image_url(self):
@@ -29,13 +29,31 @@ class ConvectiveOutlook(object):
     @property
     def url(self):
         if self.forecast_period is Outlooks.DAY1:
-            return self.base_url + 'day1otlk.html'
+            return self.base_url \
+                   + str(self.forecast_date.year) \
+                   + '/' \
+                   + self.construct_file_name(self.forecast_date,
+                                              'day1otlk',
+                                              '0100',
+                                              'html')
         elif self.forecast_period is Outlooks.DAY2:
-            return self.base_url + 'day2otlk.html'
+            return self.base_url \
+                   + str(self.forecast_date.year) \
+                   + '/' \
+                   + self.construct_file_name(self.forecast_date,
+                                              'day2otlk',
+                                              '0100',
+                                              'html')
         elif self.forecast_period is Outlooks.DAY3:
-            return self.base_url + 'day3otlk.html'
+            return self.base_url \
+                   + str(self.forecast_date.year) \
+                   + '/' \
+                   + self.construct_file_name(self.forecast_date,
+                                              'day3otlk',
+                                              '0100',
+                                              'html')
         elif self.forecast_period is Outlooks.DAY4:
-            return self.base_url + 'day4-8/'
+            return self.base_url + 'day4-8_' + self.forecast_date.strftime('%Y%m%d') + '.html'
         else:
             raise IndexError("That outlook doesn't exist.")
 
@@ -60,7 +78,7 @@ class ConvectiveOutlook(object):
         return self.__forecast_date
 
     def __init__(self, selected_outlook, f_date):
-        self.__forecast_date = f_date
+        self.__forecast_date = parser.parse(f_date)
         self.__forecast_period = self.parse_text_argument(selected_outlook)
         self.forecast_text = self.get_forecast_text()
         self.categorical_graphic = self.base_url + 'day1otlk_2000_prt.gif'
@@ -102,24 +120,28 @@ class ConvectiveOutlook(object):
             image = Image.open(image_file_location)
             image.show()
 
-    def construct_graphic_url(self, hour, g_type):
-        f_date = parser.parse(self.forecast_date)
-        year = f_date.year
-        parsed_date = f_date.strftime('%Y%m%d')
+    @staticmethod
+    def construct_file_name(date, start_text, time, file_extension) -> str:
+        return "{start_text}_{date}_{time}.{extension}" \
+            .format(start_text=start_text,
+                    date=date.strftime('%Y%m%d'),
+                    time=time,
+                    extension=file_extension)
 
+    def construct_graphic_url(self, hour, g_type):
         if g_type == 'cat':
             return "{base}/{year}/day1otlk_{date}_{hour}_prt.gif".format(
                 base=self.base_image_url,
-                year=year,
-                date=parsed_date,
+                year=self.forecast_date.year,
+                date=self.forecast_date,
                 hour=hour,
                 g_type=g_type
             )
         else:
             return "{base}/{year}/day1probotlk_{date}_{hour}_{g_type}_prt.gif".format(
                 base=self.base_image_url,
-                year=year,
-                date=parsed_date,
+                year=self.forecast_date.year,
+                date=self.forecast_date,
                 hour=hour,
                 g_type=g_type
             )
