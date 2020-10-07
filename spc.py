@@ -34,7 +34,7 @@ class ConvectiveOutlook(object):
                    + '/' \
                    + self.construct_file_name(self.forecast_date,
                                               'day1otlk',
-                                              '0100',
+                                              self.forecast_issued_time,
                                               'html')
         elif self.forecast_period is Outlooks.DAY2:
             return self.base_url \
@@ -42,7 +42,7 @@ class ConvectiveOutlook(object):
                    + '/' \
                    + self.construct_file_name(self.forecast_date,
                                               'day2otlk',
-                                              '0100',
+                                              self.forecast_issued_time,
                                               'html')
         elif self.forecast_period is Outlooks.DAY3:
             return self.base_url \
@@ -50,7 +50,7 @@ class ConvectiveOutlook(object):
                    + '/' \
                    + self.construct_file_name(self.forecast_date,
                                               'day3otlk',
-                                              '0100',
+                                              self.forecast_issued_time,
                                               'html')
         elif self.forecast_period is Outlooks.DAY4:
             return self.base_url + 'day4-8_' + self.forecast_date.strftime('%Y%m%d') + '.html'
@@ -77,7 +77,8 @@ class ConvectiveOutlook(object):
     def forecast_date(self):
         return self.__forecast_date
 
-    def __init__(self, selected_outlook, f_date):
+    def __init__(self, selected_outlook, f_date, time):
+        self.forecast_issued_time = time
         self.__forecast_date = parser.parse(f_date)
         self.__forecast_period = self.parse_text_argument(selected_outlook)
         self.forecast_text = self.get_forecast_text()

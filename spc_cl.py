@@ -15,12 +15,19 @@ arg_parser.add_argument('-d',
                         help='The date of the outlook. mm-dd-yyy 05-31-2013',
                         required=True)
 
+arg_parser.add_argument('-t',
+                        metavar='--time',
+                        type=str,
+                        help='The time in UTC of the outlook. 0100, 1200, 1300, 1630, 2000',
+                        required=True)
+
+
 args = arg_parser.parse_args()
 
 outlook = args.o
 date = args.d
+issue_time = args.t
 
-o = ConvectiveOutlook(outlook, date)
+o = ConvectiveOutlook(outlook, date, issue_time)
 print(o.forecast_text)
-print('The max category is: ' + o.max_category)
 o.show_forecast_graphic()
